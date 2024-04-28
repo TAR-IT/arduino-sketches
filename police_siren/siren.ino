@@ -1,18 +1,21 @@
 // Define the pin connected to the LEDs and the button
-const int RED_PIN = 12;
-const int BLUE_PIN = 13;
-const int BUTTON_PIN = 8;
+#define RED_PIN 12
+#define BLUE_PIN 13
+#define PIEZO_PIN 10
+#define BUTTON_PIN 8
+#define POTENTIOMETER_PIN A1
 
-
-unsigned long blinkInterval = 400; // Define the time interval for blinking in milliseconds
-unsigned long debounceDuration = 30; // Define the debounce duration for the button in milliseconds
+// Define the debounce duration for the button in milliseconds
+const unsigned long debounceDuration = 30; // Debounce duration for button input
 
 // Variables to track button state and siren state
 byte lastButtonState;
 byte sirenState = LOW;
 
 // Variable to track the last time the button state changed
-unsigned long lastTimeButtonStateChanged = millis();
+unsigned long lastTimeButtonStateChanged;
+// Variable to store the blink interval
+unsigned long blinkInterval;
 
 void setup() {
   // Set the LED pins as outputs and the button pin as input
@@ -34,18 +37,17 @@ void loop() {
     if (buttonState != lastButtonState) {
       // Update the last time the button state changed
       lastTimeButtonStateChanged = millis();
-      
       // Update lastButtonState with the current button state
       lastButtonState = buttonState;
       
       // Toggle siren state when the button is pressed
       if (buttonState == HIGH) {
         sirenState = !sirenState;
-        
         // If siren state is turned off, turn off both LEDs
         if (sirenState == LOW) {
           digitalWrite(RED_PIN, LOW);
           digitalWrite(BLUE_PIN, LOW);
+          noTone(10);
         }
       }
     }
@@ -53,18 +55,19 @@ void loop() {
   
   // If siren state is active, alternate blinking both LEDs
   if (sirenState == HIGH) {
-      // Turn off the red LED
-      digitalWrite(RED_PIN, LOW);
-      // Turn on the blue LED
-      digitalWrite(BLUE_PIN, HIGH);
-      // Delay for blinkInterval
-      delay(blinkInterval);
-      
-      // Turn off the blue LED
-      digitalWrite(BLUE_PIN, LOW);
-      // Turn on the red LED
-      digitalWrite(RED_PIN, HIGH);
-      // Delay for blinkInterval
-      delay(blinkInterval);
+    // Read the potentiometer value and update the blink interval
+    int potValue = analogRead(POTENTIOMETER_PIN);
+    blinkInterval = map(potValue, 0, 1023, 1, 1000);
+    
+    // Toggle between red and blue LEDs
+    digitalWrite(RED_PIN, !digitalRead(BLUE_PIN));
+    tone(10, 1300, 200);
+    delay(200);
+    
+    delay(blinkInterval);
+    digitalWrite(BLUE_PIN, digitalRead(RED_PIN));
+    tone(10, 1800 , 200);
+    delay(200);
+    noTone(10);
   }
 }
